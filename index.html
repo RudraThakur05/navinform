@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Interactive Form Validation</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --ok: #0a7;
+      --warn: #f5a623;
+      --err: #e05252;
+      --muted: #6b7280;
+      --bg: #fff;
+      --card: #f8fafc;
+    }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; background: #f3f6f9; margin: 2rem; color: #0f172a; }
+    .card { background: var(--card); padding: 1.25rem; border-radius: 8px; max-width: 720px; margin: 0 auto; box-shadow: 0 6px 18px rgba(8,15,30,0.06); }
+    h1 { margin: 0 0 0.75rem 0; font-size: 1.25rem; }
+    form { display: grid; gap: 0.75rem; }
+    label { display:block; font-size: 0.9rem; margin-bottom: .25rem; }
+    .row { display: flex; gap: .75rem; }
+    .col { flex: 1; }
+    input[type="text"], input[type="email"], input[type="password"], input[type="number"] {
+      width: 100%; padding: .55rem; border-radius: 6px; border: 1px solid #d1d5db; box-sizing: border-box;
+    }
+    input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+    .hint { font-size: .85rem; color: var(--muted); }
+    .error { color: var(--err); font-size: .85rem; margin-top: .25rem; min-height: 1.1em; }
+    .success { color: var(--ok); font-size: .9rem; margin-top: .25rem; }
+    .meter { height: 8px; background: #e6eef8; border-radius: 999px; overflow:hidden; margin-top:.35rem; }
+    .meter > i { display:block; height:100%; width:0%; background: linear-gradient(90deg,#f59e0b,#10b981); transition: width .2s ease; }
+    .controls { display:flex; gap:.5rem; align-items:center; margin-top:.5rem; }
+    button { padding:.5rem .75rem; border-radius:6px; border: none; background: #2563eb; color: white; cursor:pointer; }
+    button[disabled] { background:#94a3b8; cursor:not-allowed; }
+    .small-muted { font-size:.85rem; color:var(--muted); }
+    .summary { margin-top:.75rem; padding:.6rem; border-radius:6px; background:#ecffef; color:#064e3b; display:none; }
+    .field-ok { border-color: var(--ok) !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.06); }
+    .field-err { border-color: var(--err) !important; box-shadow: 0 0 0 3px rgba(224,82,82,0.06); }
+    .inline-flag { font-size:.85rem; padding:.15rem .4rem; border-radius:999px; background:#f1f5f9; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="card" role="region" aria-labelledby="formHeading">
+    <h1 id="formHeading">Interactive Form Validation</h1>
+    <p class="small-muted">This form validates fields live as you type and prevents submission until everything is valid.</p>
+
+    <form id="userForm" novalidate>
+      <div>
+        <label for="fullName">Full name <span class="inline-flag">required</span></label>
+        <input id="fullName" name="fullName" type="text" autocomplete="name" required minlength="2" />
+        <div id="err-fullName" class="error" aria-live="polite"></div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label for="email">Email <span class="inline-flag">required</span></label>
+          <input id="email" name="email" type="email" autocomplete="email" required />
+          <div id="err-email" class="error" aria-live="polite"></div>
+        </div>
+
+        <div class="col">
+          <label for="username">Username <span class="inline-flag">required</span></label>
+          <input id="username" name="username" type="text" minlength="3" maxlength="24" autocomplete="username" required />
+          <div id="err-username" class="error" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label for="password">Password <span class="inline-flag">required</span></label>
+          <input id="password" name="password" type="password" autocomplete="new-password" required minlength="6" />
+          <div class="meter" aria-hidden="true"><i id="pwMeter"></i></div>
+          <div id="pwHints" class="hint">Use at least 8 characters with a mix of letters, numbers, and symbols for best results.</div>
+          <div id="err-password" class="error" aria-live="polite"></div>
+        </div>
+
+        <div class="col">
+          <label for="confirm">Confirm password <span class="inline-flag">required</span></label>
+          <input id="confirm" name="confirm" type="password" autocomplete="new-password" required />
+          <div id="err-confirm" class="error" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label for="age">Age</label>
+          <input id="age" name="age" type="number" min="1" max="120" />
+          <div id="err-age" class="error" aria-live="polite"></div>
+        </div>
+
+        <div class="col">
+          <label for="website">Website</label>
+          <input id="website" name="website" type="text" placeholder="https://example.com" />
+          <div id="err-website" class="error" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div>
+        <label><input id="terms" name="terms" type="checkbox" /> I agree to the terms and conditions</label>
+        <div id="err-terms" class="error" aria-live="polite"></div>
+      </div>
+
+      <div class="controls">
+        <button id="submitBtn" type="submit" disabled>Submit</button>
+        <button id="resetBtn" type="button">Reset</button>
+        <div style="flex:1"></div>
+        <div id="formStatus" class="small-muted" aria-live="polite">All fields must be valid to enable submit.</div>
+      </div>
+
+      <div id="success" class="summary" role="status"></div>
+    </form>
+  </div>
+
+  <script>
+    // Interactive validation script
+    (function () {
+      const form = document.getElementById('userForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const status = document.getElementById('formStatus');
+      const success = document.getElementById('success');
+
+      // Fields
+      const fields = {
+        fullName: document.getElementById('fullName'),
+        email: document.getElementById('email'),
+        username: document.getElementById('username'),
+        password: document.getElementById('password'),
+        confirm: document.getElementById('confirm'),
+        age: document.getElementById('age'),
+        website: document.getElementById('website'),
+        terms: document.getElementById('terms'),
+      };
+
+      // Error elements
+      const errs = {
+        fullName: document.getElementById('err-fullName'),
+        email: document.getElementById('err-email'),
+        username: document.getElementById('err-username'),
+        password: document.getElementById('err-password'),
+        confirm: document.getElementById('err-confirm'),
+        age: document.getElementById('err-age'),
+        website: document.getElementById('err-website'),
+        terms: document.getElementById('err-terms'),
+      };
+
+      const pwMeter = document.getElementById('pwMeter');
+
+      // Simple username availability simulation (pretend we fetched these)
+      const takenUsernames = ['admin','user','test'];
+
+      // Validation helpers
+      function setError(fieldName, message) {
+        errs[fieldName].textContent = message || '';
+        const el = fields[fieldName];
+        if (!el) return;
+        if (message) {
+          el.classList.add('field-err');
+          el.classList.remove('field-ok');
+          el.setAttribute('aria-invalid','true');
+        } else {
+          el.classList.remove('field-err');
+          el.classList.add('field-ok');
+          el.removeAttribute('aria-invalid');
+        }
+      }
+
+      function clearAllErrors() {
+        for (const k of Object.keys(errs)) setError(k, '');
+      }
+
+      function isValidEmail(email) {
+        // conservative regex
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+
+      function isValidURL(u) {
+        if (!u) return true;
+        try {
+          const parsed = new URL(u);
+          return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+        } catch (e) {
+          return false;
+        }
+      }
+
+      // Password strength scoring: length, variety of char types
+      function passwordStrength(pw) {
+        let score = 0;
+        if (!pw) return 0;
+        if (pw.length >= 8) score += 2;
+        if (pw.length >= 12) score += 1;
+        if (/[a-z]/.test(pw)) score += 1;
+        if (/[A-Z]/.test(pw)) score += 1;
+        if (/[0-9]/.test(pw)) score += 1;
+        if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+        return Math.min(score, 6); // 0..6
+      }
+
+      function updatePasswordMeter() {
+        const val = fields.password.value || '';
+        const score = passwordStrength(val);
+        const pct = Math.round((score / 6) * 100);
+        pwMeter.style.width = pct + '%';
+        // color changes
+        if (score <= 2) {
+          pwMeter.style.background = 'linear-gradient(90deg,#f43f5e,#f97316)'; // weak: red-orange
+        } else if (score <= 4) {
+          pwMeter.style.background = 'linear-gradient(90deg,#f59e0b,#fbbf24)'; // medium
+        } else {
+          pwMeter.style.background = 'linear-gradient(90deg,#10b981,#06b6d4)'; // strong
+        }
+      }
+
+      // Field validation rules
+      function validateField(name) {
+        const v = fields[name].value && fields[name].value.trim ? fields[name].value.trim() : fields[name].value;
+        switch (name) {
+          case 'fullName':
+            if (!v) return setError(name, 'Full name is required.');
+            if (v.length < 2) return setError(name, 'Enter at least 2 characters.');
+            return setError(name, '');
+          case 'email':
+            if (!v) return setError(name, 'Email is required.');
+            if (!isValidEmail(v)) return setError(name, 'Enter a valid email address.');
+            return setError(name, '');
+          case 'username':
+            if (!v) return setError(name, 'Username is required.');
+            if (v.length < 3) return setError(name, 'Use at least 3 characters.');
+            if (!/^[a-zA-Z0-9_-]+$/.test(v)) return setError(name, 'Use only letters, numbers, - or _.');
+            // simulate availability check
+            if (takenUsernames.includes(v.toLowerCase())) return setError(name, 'Username is taken.');
+            return setError(name, '');
+          case 'password':
+            if (!v) return setError(name, 'Password is required.');
+            if (v.length < 6) return setError(name, 'Password must be at least 6 characters.');
+            // encourage stronger password but don't block submit for medium strength
+            if (passwordStrength(v) <= 2) {
+              setError(name, 'Password is weak — add uppercase, numbers, or symbols.');
+              return;
+            }
+            return setError(name, '');
+          case 'confirm':
+            if (!v) return setError(name, 'Please confirm your password.');
+            if (v !== fields.password.value) return setError(name, 'Passwords do not match.');
+            return setError(name, '');
+          case 'age':
+            if (!v) { setError(name, ''); return; }
+            const n = Number(v);
+            if (!Number.isFinite(n) || n < 1 || n > 120) return setError(name, 'Enter a valid age between 1 and 120.');
+            return setError(name, '');
+          case 'website':
+            if (!v) { setError(name, ''); return; }
+            if (!isValidURL(v)) return setError(name, 'Enter a valid URL starting with http(s)://');
+            return setError(name, '');
+          case 'terms':
+            if (!fields.terms.checked) return setError('terms', 'You must accept the terms to continue.');
+            return setError('terms', '');
+          default:
+            return;
+        }
+      }
+
+      // Validate all and update submit state
+      function validateAll() {
+        // run validators for all relevant fields
+        validateField('fullName');
+        validateField('email');
+        validateField('username');
+        validateField('password');
+        validateField('confirm');
+        validateField('age');
+        validateField('website');
+        validateField('terms');
+
+        // check if any visible errors remain
+        const anyErrors = Object.values(errs).some(el => el.textContent && el.textContent.trim().length > 0);
+        // also ensure required fields non-empty
+        const requiredEmpty = !fields.fullName.value.trim() || !fields.email.value.trim() || !fields.username.value.trim() || !fields.password.value || !fields.confirm.value;
+        const canSubmit = !anyErrors && !requiredEmpty && fields.terms.checked;
+        submitBtn.disabled = !canSubmit;
+
+        status.textContent = canSubmit ? 'Ready to submit.' : 'All fields must be valid to enable submit.';
+        return canSubmit;
+      }
+
+      // Attach events: input and blur for immediate feedback
+      ['input','blur'].forEach(evt => {
+        fields.fullName.addEventListener(evt, () => { validateField('fullName'); validateAll(); });
+        fields.email.addEventListener(evt, () => { validateField('email'); validateAll(); });
+        fields.username.addEventListener(evt, () => { validateField('username'); validateAll(); });
+        fields.password.addEventListener(evt, () => { updatePasswordMeter(); validateField('password'); validateField('confirm'); validateAll(); });
+        fields.confirm.addEventListener(evt, () => { validateField('confirm'); validateAll(); });
+        fields.age.addEventListener(evt, () => { validateField('age'); validateAll(); });
+        fields.website.addEventListener(evt, () => { validateField('website'); validateAll(); });
+        fields.terms.addEventListener('change', () => { validateField('terms'); validateAll(); });
+      });
+
+      // Reset button
+      resetBtn.addEventListener('click', () => {
+        form.reset();
+        clearAllErrors();
+        pwMeter.style.width = '0%';
+        Array.from(form.querySelectorAll('input')).forEach(i => i.classList.remove('field-ok','field-err'));
+        submitBtn.disabled = true;
+        status.textContent = 'All fields must be valid to enable submit.';
+        success.style.display = 'none';
+      });
+
+      // Prevent submission until valid
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!validateAll()) {
+          status.textContent = 'Fix the errors before submitting.';
+          return;
+        }
+        // collect sanitized data (for demo only - do not send passwords in plain text)
+        const data = {
+          fullName: fields.fullName.value.trim(),
+          email: fields.email.value.trim(),
+          username: fields.username.value.trim(),
+          age: fields.age.value ? Number(fields.age.value) : null,
+          website: fields.website.value ? fields.website.value.trim() : null,
+        };
+        // show success summary
+        success.textContent = 'Form submitted successfully. Saved data: ' + JSON.stringify(data);
+        success.style.display = 'block';
+        // Optionally clear or keep data - we reset for demo
+        // form.reset();
+        // submitBtn.disabled = true;
+      });
+
+      // initial state
+      updatePasswordMeter();
+      validateAll();
+    })();
+  </script>
+</body>
+</html>
